@@ -19,7 +19,9 @@
     { id:'egg', name:'溏心煎蛋', category:'savory', cost:3, price:110, tags:['rich','soft'], desc:'流心的金色小太阳，柔软浓郁。' },
     { id:'mushroom', name:'森林蘑菇', category:'secret', cost:3, price:150, tags:['earthy','soft'], desc:'雨后森林的香气，软嫩又特别。' },
     { id:'chili', name:'火花辣椒', category:'secret', cost:2, price:140, tags:['spicy','sharp'], desc:'一小簇火花，舌尖上的冒险。' },
-    { id:'icecream', name:'香草冰淇淋', category:'secret', cost:4, price:230, tags:['sweet','cold','dairy'], desc:'凉凉的、甜甜的，夏日限定的魔法。' }
+    { id:'icecream', name:'香草冰淇淋', category:'secret', cost:4, price:230, tags:['sweet','cold','dairy'], desc:'凉凉的、甜甜的，夏日限定的魔法。' },
+    { id:'edamame', name:'毛豆肉饼', category:'secret', cost:5, price:170, tags:['green','meaty','earthy'], desc:'毛豆变成绿色小肉饼，头顶两片豆荚耳朵，清香又扎实。', cook:true },
+    { id:'milkfrog', name:'奶蛙肉饼', category:'secret', cost:5, price:190, tags:['dairy','meaty','soft'], desc:'奶白色蛙蛙造型肉饼，煎出金边，奶香里有点荒诞。', cook:true }
   ];
   const byId = Object.fromEntries(ingredients.map(i => [i.id,i]));
   const baseIds = ingredients.filter(i => !i.price).map(i => i.id);
@@ -53,6 +55,9 @@
     {quote:'森林里的小太阳醒了，旁边有紫色的圈圈。要软软的口感，不用肉。', required:['mushroom','egg','onion'], banned:['meaty'], hint:'森林是蘑菇，小太阳是煎蛋，紫圈是洋葱。', minDay:4},
     {quote:'来点反差感！草莓的甜拥抱炭火肉香，再让白云轻轻落在上面。', required:['beef','jam','cream'], hint:'牛肉、草莓酱、奶油。没错，这就是大胆的咸甜组合。', minDay:5},
     {quote:'海岛火山的味道：热带的太阳、红色小火花和金黄咔嚓声，都来一点！', required:['pineapple','chili','chicken'], hint:'菠萝、辣椒和鸡排，酸甜辣脆的冒险。', minDay:5}
+    ,{quote:'想要绿油油的豆荚小精灵！把毛豆变成热乎乎的肉饼，再披一层金色披风。',required:['edamame','cheese'],hint:'先把毛豆肉饼拖上煎台，煎熟后拖到汉堡，再加入芝士。',minDay:2}
+    ,{quote:'来一只白白软软的奶蛙吧。要先煎得香香的，旁边放一片脆脆的绿叶。',required:['milkfrog','lettuce'],hint:'奶蛙肉饼需要先煎熟，搭配生菜。',minDay:3}
+    ,{quote:'森林里遇见毛豆精灵和奶蛙！两块奇妙肉饼都要热乎乎的，再撒一点森林香气。',required:['edamame','milkfrog','mushroom'],hint:'毛豆肉饼和奶蛙肉饼都要逐一煎熟，再搭配蘑菇。',minDay:5}
   ];
   const upgrades = [
     {id:'patience',name:'舒适等餐区',icon:'☂',desc:'每级增加 15 秒等餐时间',base:95,max:3},
@@ -62,10 +67,10 @@
   const freshSave = () => ({money:80,unlocked:[...baseIds],upgrades:{patience:0,tips:0,slots:0},day:0,stars:{},best:0,served:0,earned:0,collection:[],seen:false,sound:false});
   let save = freshSave(), storageOK = true;
   try { const raw = localStorage.getItem(STORE); if(raw){const s=JSON.parse(raw);save={...save,...s,upgrades:{...save.upgrades,...s.upgrades}}; save.unlocked=[...new Set([...baseIds,...save.unlocked.filter(id=>byId[id])])];save.day=Math.max(0,Math.min(7,Number(save.day)||0));save.money=Math.max(0,Number(save.money)||0);}} catch { storageOK=false; }
-  const state = {mode:'story',day:save.day,guest:0,good:0,revenue:0,scores:[],rep:3,stack:[],capped:false,order:null,remaining:0,total:0,category:'all',paused:false,ended:false,modal:null,last:performance.now(),lastOrder:null,free:false};
+  const state = {mode:'story',day:save.day,guest:0,good:0,revenue:0,scores:[],rep:3,stack:[],cooked:[],grill:null,capped:false,order:null,remaining:0,total:0,category:'all',paused:false,ended:false,modal:null,last:performance.now(),lastOrder:null,free:false};
   let toastTimer, audio, lastFocus;
   const svg = (content, view='0 0 200 50') => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${view}" aria-hidden="true">${content}</svg>`;
-  function food(id) {
+  function food(id, variant='cooked') {
     const line='stroke="#8b5b35" stroke-width="2.5" stroke-linejoin="round"';
     const art={
       top:`<path d="M10 47C10-6 190-6 190 47Q100 57 10 47Z" fill="#eda74e" ${line}/><path d="M19 34C36 0 165 0 182 35" fill="none" stroke="#ffd385" stroke-width="8" stroke-linecap="round"/><path d="m50 22 7-3m28-5 7 2m26 3 7-2m21 10 7 2m-54 6 6-2" stroke="#fff1c2" stroke-width="4" stroke-linecap="round"/><path d="M12 43q88 13 176 0" stroke="#c67c32" stroke-width="4" fill="none"/>`,
@@ -86,13 +91,16 @@
       mushroom:`<g fill="#b68a68" stroke="#80604c" stroke-width="2.5"><path d="M12 25q0-27 47-18q19 4 20 18H12Z"/><path d="M84 26q0-29 48-19q19 4 21 19H84Z"/><path d="M144 31q0-24 35-17q14 3 16 17H144Z"/></g><g fill="#efdcba" stroke="#aa8660" stroke-width="2"><path d="M35 24h20l5 16H30Z"/><path d="M107 25h20l5 17h-31Z"/><path d="M162 30h14l4 13h-22Z"/></g><path d="m27 16 12-3m66 4 10-3m46 8 9-2" stroke="#d9b68e" stroke-width="3" stroke-linecap="round"/>`,
       chili:`<g fill="#d55842" stroke="#a74231" stroke-width="2"><path d="M15 15q30-12 54 3q-11 29-50 18q23-2 24-13q-17 4-28-8Z"/><path d="M80 13q29-12 53 3q-11 29-50 18q23-2 24-13q-17 4-27-8Z"/><path d="M144 16q25-10 45 2q-9 26-43 16q21-2 22-11q-15 3-24-7Z"/></g><path d="m17 15-6-8m71 6-6-7m70 10-6-8" stroke="#67864e" stroke-width="5" stroke-linecap="round"/>`,
       icecream:`<path d="M15 41q-10-17 10-27q9-18 28-5q15-12 28 0q18-16 34-1q19-14 34 2q24-13 32 9q20 11 7 24Z" fill="#f7eacc" stroke="#c9b797" stroke-width="2.5"/><path d="M29 25q8-13 21-7m40 8q12-13 25-6m33 6q10-13 22-6" stroke="#fffaf0" stroke-width="6" stroke-linecap="round" fill="none"/>`
+      ,edamame:`<path d="M8 22q10-11 23-7 22-13 44-5 19-9 38 0 25-9 46 4 18-2 32 10l-5 12q-25 10-43 5-25 9-46 2-22 6-43-1-24 7-44-8Z" fill="#78a158" stroke="#486938" stroke-width="3"/><path d="M20 22q74-18 162 0" stroke="#b1c781" stroke-width="4" fill="none"/><path d="M43 24q6-9 12 0m35-5q8-8 15 0m36 5q8-9 17 0" fill="none" stroke="#d6e6ad" stroke-width="4" stroke-linecap="round"/><path d="m30 16-9-13q20-5 22 12m113-1 13-13q12 12-2 20" fill="#8fbd69" stroke="#476838" stroke-width="2"/>`,
+      milkfrog:`<path d="M7 26q8-14 27-13 15-9 33-4 22-10 39 0 22-8 44 5 30-3 43 13l-8 12q-21 8-41 3-25 8-46 1-23 6-47 0-27 6-42-5Z" fill="#e9d9ad" stroke="#9a825a" stroke-width="3"/><path d="M15 24q80-20 172 1" stroke="#fff7df" stroke-width="5" fill="none"/><circle cx="55" cy="14" r="10" fill="#f8ebc9" stroke="#a58e66" stroke-width="2"/><circle cx="147" cy="14" r="10" fill="#f8ebc9" stroke="#a58e66" stroke-width="2"/><circle cx="55" cy="13" r="2" fill="#786551"/><circle cx="147" cy="13" r="2" fill="#786551"/><path d="M86 29q14 9 28 0" fill="none" stroke="#9c805e" stroke-width="2"/>`
     };
     // 每片食材使用独立渐变、边缘明暗和细密纹理，保留清晰的卡通轮廓。
-    const palette={top:['#ffe0a0','#eaaa51','#b96928'],bottom:['#f8cc83','#e4a05b','#af652c'],beef:['#ba7951','#76452e','#42291f'],cheese:['#fff198','#f5c443','#d49225'],lettuce:['#c2dd88','#83ad56','#4d7939'],tomato:['#ffa78b','#e56b50','#b63d30'],pickle:['#c4d28a','#8fa957','#567734'],sauce:['#ffc47b','#d98b47','#a65d29'],chicken:['#ffe097','#d9a047','#a76525'],bacon:['#efac8b','#c5725b','#864130'],onion:['#edd5e7','#bd91b6','#8e618b'],cream:['#fffef5','#fff0d4','#dcc69f'],jam:['#f9a0ae','#d75b76','#963449'],pineapple:['#fff2a0','#f1c451','#cb8f26'],egg:['#fffdf0','#fff1cd','#dcc395'],mushroom:['#d6b28c','#ab805d','#71503b'],chili:['#fa9c74','#d75b40','#a13228'],icecream:['#fffef5','#f4e6c7','#d5be96']};
-    const colors=palette[id]||palette.beef;
+    const palette={top:['#ffe0a0','#eaaa51','#b96928'],bottom:['#f8cc83','#e4a05b','#af652c'],beef:['#ba7951','#76452e','#42291f'],cheese:['#fff198','#f5c443','#d49225'],lettuce:['#c2dd88','#83ad56','#4d7939'],tomato:['#ffa78b','#e56b50','#b63d30'],pickle:['#c4d28a','#8fa957','#567734'],sauce:['#ffc47b','#d98b47','#a65d29'],chicken:['#ffe097','#d9a047','#a65d25'],bacon:['#efac8b','#c5725b','#864130'],onion:['#edd5e7','#bd91b6','#8e618b'],cream:['#fffef5','#fff0d4','#dcc69f'],jam:['#f9a0ae','#d75b76','#963449'],pineapple:['#fff2a0','#f1c451','#cb8f26'],egg:['#fffdf0','#fff1cd','#dcc395'],mushroom:['#d6b28c','#ab805d','#71503b'],chili:['#fa9c74','#d75b40','#a13228'],icecream:['#fffef5','#f4e6c7','#d5be96'],edamame:['#c5dc85','#78a352','#3e6034'],milkfrog:['#fff9d9','#e3d1a4','#9a7b4f']};
+    const rawPalette={beef:['#f3b6a5','#c67d71','#99594e'],chicken:['#ffe9d1','#e5c2a0','#ba9879'],bacon:['#f7b8a7','#dc8e87','#a86662'],edamame:['#d9e8b5','#a5c581','#729958'],milkfrog:['#fff8e5','#f1e2c5','#cfbda1']};
+    const colors=variant==='raw'&&rawPalette[id]?rawPalette[id]:palette[id]||palette.beef;
     let shape=art[id]||art.beef;
-    const fills={top:'#eda74e',bottom:'#e5a052',beef:'#88513d',cheese:'#f5c94f',lettuce:'#87ad5c',tomato:'#e76e54',pickle:'#74984e',chicken:'#dba246',bacon:'#c87665',onion:'#dbc2d8',cream:'#fff6e1',jam:'#d96378',pineapple:'#f1c65b',egg:'#fff5d7',mushroom:'#b68a68',chili:'#d55842',icecream:'#f7eacc'};
-    const key='food-'+id;
+    const fills={top:'#eda74e',bottom:'#e5a052',beef:'#88513d',cheese:'#f5c94f',lettuce:'#87ad5c',tomato:'#e76e54',pickle:'#74984e',chicken:'#dba246',bacon:'#c87665',onion:'#dbc2d8',cream:'#fff6e1',jam:'#d96378',pineapple:'#f1c65b',egg:'#fff5d7',mushroom:'#b68a68',chili:'#d55842',icecream:'#f7eacc',edamame:'#78a158',milkfrog:'#e9d9ad'};
+    const key='food-'+id+'-'+variant;
     if(fills[id])shape=shape.split(`fill="${fills[id]}"`).join(`fill="url(#${key}-body)"`);
     if(id==='sauce')shape=shape.replace('stroke="#d58b4c"',`stroke="url(#${key}-body)"`);
     shape=shape.replace(/stroke-width="2\.5"/g,'stroke-width="1.4"').replace(/stroke-width="3"/g,'stroke-width="1.8"');
@@ -101,15 +109,18 @@
       texture='<path d="M20 36Q100 50 180 36" stroke="#ffe7ae" stroke-width="2" fill="none" opacity=".55"/>';
       for(let i=0;i<24;i++){const x=27+(i*37%148),y=12+(i*17%27);if(Math.abs(x-100)/83+y/55<1.4)texture+=`<ellipse cx="${x}" cy="${y}" rx="2.4" ry="1.1" transform="rotate(${i*31%110-55} ${x} ${y})" fill="#fff0ba" stroke="#c29253" stroke-width=".45"/>`;}
     }
-    if(id==='beef'||id==='chicken'){
+    if(variant==='cooked'&&['beef','chicken','bacon','edamame','milkfrog'].includes(id)){
       for(let i=0;i<48;i++){const x=16+(i*47%169),y=16+(i*23%22);texture+=`<ellipse cx="${x}" cy="${y}" rx="${i%3+1}" ry=".8" fill="${i%2?'#ffe0a0':'#3c251a'}" opacity="${id==='beef'?'.25':'.38'}"/>`;}
-      if(id==='beef')texture+='<path d="m35 15 9 21m34-24 9 24m35-24 9 24m35-22 8 21" stroke="#3e281f" stroke-width="3" opacity=".28" stroke-linecap="round"/>';
+    if(variant==='cooked'&&(id==='beef'||id==='edamame'||id==='milkfrog'))texture+='<path d="m35 15 9 21m34-24 9 24m35-24 9 24m35-22 8 21" stroke="#3e281f" stroke-width="3" opacity=".22" stroke-linecap="round"/>';
     }
     if(id==='jam'||id==='tomato')texture='<path d="M23 20q10-6 19-3m75 1q12-5 23-2" fill="none" stroke="#ffe1cc" stroke-width="2" opacity=".8" stroke-linecap="round"/>';
     if(id==='cheese')texture='<path d="m25 18 27-2 25 5" fill="none" stroke="#fff8bc" stroke-width="2" opacity=".8"/><path d="m113 25-1 13" stroke="#c58b23" stroke-width="1" opacity=".4"/>';
+    if(id==='cheese')texture+='<path d="M61 28q3 6 3 14q3 6 7 0l4-11m65-8q2 9 3 14q4 8 8-1l3-9" fill="#f1b62c" stroke="#d89a27" stroke-width="1.2"/>';
+    if(id==='sauce'||id==='jam')texture+='<path d="M35 29q-1 9 4 10q5 0 3-11m91 1q-2 12 3 13q4-1 4-14" stroke="'+(id==='jam'?'#c54c66':'#c97b3b')+'" stroke-width="5" fill="none" stroke-linecap="round"/>';
     if(id==='cream'||id==='icecream')texture='<path d="M37 30q10-10 19-4m37 0q12-11 22-4m35 4q10-8 19-1" stroke="#ffffff" stroke-width="3" opacity=".7" fill="none" stroke-linecap="round"/>';
     const defs=`<defs><linearGradient id="${key}-body" x1="0" y1="0" x2=".12" y2="1"><stop offset="0" stop-color="${colors[0]}"/><stop offset=".48" stop-color="${colors[1]}"/><stop offset="1" stop-color="${colors[2]}"/></linearGradient></defs>`;
-    return svg(defs+shape+texture,id==='top'?'0 0 200 58':'0 0 200 50');
+    const depth=id==='top'?'<path d="M11 43q89 17 178 0l-2 6Q100 64 13 49Z" fill="#9c552b" opacity=".55"/>':id==='bottom'?'<path d="M13 26q88 30 175 0l-3 10Q100 58 15 36Z" fill="#9a5d32" opacity=".33"/>':'';
+    return svg(defs+depth+shape+texture,id==='top'?'0 0 200 58':'0 0 200 50');
   }
   function fullBurger(ids=['lettuce','beef','cheese','tomato']) {
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 180" aria-hidden="true">${food('bottom').replace('<svg ','<svg x="10" y="135" width="200" height="30" ')}${ids.map((id,i)=>food(id).replace('<svg ',`<svg x="10" y="${120-i*19}" width="200" height="30" `)).join('')}${food('top').replace('<svg ','<svg x="10" y="26" width="200" height="63" ')}</svg>`;
@@ -130,15 +141,37 @@
   function closeModal(){if(state.ended||['result','summary','welcome','rescue'].includes(state.modal))return;state.modal=null;$('modal-backdrop').hidden=true;state.last=performance.now();if(lastFocus)lastFocus.focus();}
   function forceClose(){state.modal=null;$('modal-backdrop').hidden=true;state.last=performance.now();}
   function maxLayers(){return 8+save.upgrades.slots*2;}
+  const needsCooking = id => !!byId[id]?.cook || ['beef','chicken','bacon'].includes(id);
   function stackCost(ids=state.stack){return ids.reduce((n,id)=>n+byId[id].cost,0);}
+  function renderGrill(){
+    const grill=state.grill;
+    $('grill-food').innerHTML=grill?food(grill.id,grill.ready?'cooked':'raw'):'♨';
+    $('grill-food').classList.toggle('ready',!!grill?.ready);
+    $('grill-food').classList.toggle('cooking',!!grill&&!grill.ready);
+    $('grill-progress-fill').style.width=grill?`${Math.min(100,grill.progress/5*100)}%`:'0%';
+    $('grill-label').textContent=grill?(grill.ready?`${byId[grill.id].name}煎好了，拖向盘子！`:`${byId[grill.id].name}正在滋滋煎制…`):'拖入生肉开始煎制';
+    $('grill-pan').classList.toggle('sizzling',!!grill&&!grill.ready);
+    $('grill-pan').classList.toggle('finished',!!grill?.ready);
+    $('grill-food').setAttribute('aria-label',grill?.ready?`已煎熟的${byId[grill.id].name}，拖到汉堡上`:'煎台');
+  }
+  function beginCooking(id){
+    if(state.modal||state.ended)return false;
+    if(!needsCooking(id)||!save.unlocked.includes(id))return false;
+    if(state.grill){toast(state.grill.ready?'先把煎好的肉饼拖走':'煎台正忙着呢');return false;}
+    if(state.capped){toast('先掀开面包再煎肉');return false;}
+    if(state.stack.length>=maxLayers()){toast('汉堡已经叠满了');return false;}
+    if(state.mode!=='free'&&stackCost()+byId[id].cost+2>save.money){toast('金币不够买这份肉饼');return false;}
+    state.grill={id,progress:0,ready:false};renderGrill();playSound('add');return true;
+  }
+  function advanceCooking(seconds){if(!state.grill||state.grill.ready||state.modal||state.ended)return;state.grill.progress=Math.min(5,state.grill.progress+seconds);if(state.grill.progress>=5){state.grill.ready=true;playSound('coin');toast(`${byId[state.grill.id].name}煎好啦，拖到汉堡上！`);}renderGrill();}
   function renderStack(){
-    $('burger-stack').innerHTML=`<div class="burger-layer" data-kind="bottom">${food('bottom')}</div>`+state.stack.map((id,i)=>`<div class="burger-layer" data-kind="${id}" data-index="${i}" title="点击移除${byId[id].name}">${food(id)}</div>`).join('')+(state.capped?`<div class="burger-layer" data-kind="top">${food('top')}</div>`:'');
-    const height=27+state.stack.reduce((n,id)=>n+(['beef','chicken'].includes(id)?21:id==='cream'?22:['cheese','jam','sauce'].includes(id)?12:17),0)+(state.capped?49:0);
-    $('burger-stack').style.transform=`translateX(-50%) scale(${Math.min(1,151/height)})`;
+    $('burger-stack').innerHTML=`<div class="burger-layer" data-kind="bottom">${food('bottom')}</div>`+state.stack.map((id,i)=>`<div class="burger-layer" data-kind="${id}" data-index="${i}" style="--offset:${Math.sin(i*2.7)*5}px;--tilt:${Math.sin(i*3.8)*2}deg" title="点击移除${byId[id].name}">${food(id)}</div>`).join('')+(state.capped?`<div class="burger-layer" data-kind="top">${food('top')}</div>`:'');
+    const height=29+state.stack.reduce((n,id)=>n+(needsCooking(id)?31:id==='cream'?25:['cheese','jam','sauce'].includes(id)?17:23),0)+(state.capped?64:0);
+    $('burger-stack').style.transform=`translateX(-50%) scale(${Math.min(1,295/height)})`;
     $('burger-stack').style.transformOrigin='center bottom';
     $('layer-counter').textContent=`${state.stack.length} / ${maxLayers()} 层`;
-    $('cost-label').innerHTML=`食材成本 <b>${stackCost()+2}</b>`;
-    $('stack-note').textContent=state.capped?'美味已经准备好，出餐吧！':state.stack.length?'再加一点心情，然后盖上面包':'从喜欢的配料开始吧 ↓';
+    $('cost-label').innerHTML=`食材成本 <b>${stackCost()+(state.stack.length?2:0)}</b>`;
+    $('stack-note').textContent=state.capped?'美味已经准备好，出餐吧！':state.stack.length?'拖入下一层，或者盖上面包':'把配料拖到盘子里 ↓';
     $('bun-button').classList.toggle('capped',state.capped);$('bun-button').lastElementChild.textContent=state.capped?'掀开面包':'盖上面包';
     $('serve-button').disabled=!state.stack.length;renderChips();renderPantry();
   }
@@ -147,13 +180,13 @@
     const list=ingredients.filter(i=>state.category==='all'||i.category===state.category);
     // 全部先展示已解锁食材，再留一格新配料提示。
     const shown=state.category==='all'?[...list.filter(i=>save.unlocked.includes(i.id)),...list.filter(i=>!save.unlocked.includes(i.id)).slice(0,Math.max(1,8-save.unlocked.length))]:list;
-    $('ingredient-grid').innerHTML=shown.map(i=>{const unlocked=save.unlocked.includes(i.id),qty=state.stack.filter(id=>id===i.id).length;return `<button class="ingredient ${unlocked?'':'locked'}" data-ingredient="${i.id}" aria-label="${unlocked?'添加':'解锁'}${i.name}，${unlocked?i.cost+'金币成本':i.price+'金币'}"><span class="ingredient-price">${unlocked?i.cost+' ◇':'♙'}</span>${qty?`<span class="ingredient-qty">${qty}</span>`:''}<span class="ingredient-picture">${food(i.id)}</span><span class="ingredient-name">${unlocked?i.name:'解锁 '+i.name}</span></button>`;}).join('');
+    $('ingredient-grid').innerHTML=shown.map(i=>{const unlocked=save.unlocked.includes(i.id),qty=state.stack.filter(id=>id===i.id).length;return `<button class="ingredient ${unlocked?'':'locked'} ${needsCooking(i.id)?'raw-meat':''}" data-ingredient="${i.id}" aria-label="${unlocked?(needsCooking(i.id)?'拖到煎台烹饪':'拖到盘子叠放'):'解锁'}${i.name}，${unlocked?i.cost+'金币成本':i.price+'金币'}"><span class="ingredient-price">${unlocked?i.cost+' ◇':'♙'}</span>${qty?`<span class="ingredient-qty">${qty}</span>`:''}<span class="ingredient-picture">${food(i.id,needsCooking(i.id)?'raw':'cooked')}</span><span class="ingredient-name">${unlocked?i.name:'解锁 '+i.name}</span>${unlocked&&needsCooking(i.id)?'<span class="raw-label">生 · 需煎制</span>':''}</button>`;}).join('');
     $('pantry-count').textContent=`${save.unlocked.length} 种配料`;
   }
   function renderGoal(){const day=days[state.day],percent=state.mode==='endless'?state.rep/3*100:Math.min(100,state.good/day.goal*100);$('goal-percent').textContent=`${Math.round(percent)}%`;$('goal-fill').style.width=percent+'%';$('goal-title').textContent=state.mode==='endless'?`保持口碑，刷新 ${save.best} 单纪录`:state.mode==='free'?'大胆试试你的奇妙配方':`让 ${day.goal} 位客人带着笑容离开`;$('goal-detail').textContent=state.mode==='endless'?`口碑 ${'♥'.repeat(state.rep)}${'♡'.repeat(3-state.rep)} · 已服务 ${state.guest} 位`:state.mode==='free'?'没有计时 · 不花金币 · 可以收藏作品':`好评 ${state.good} / ${day.goal} · 完成后解锁下一天`;}
   function renderStatus(){const day=days[state.day];$('day-label').textContent=state.mode==='story'?`晴天 · 第 ${String(state.day+1).padStart(2,'0')} 天`:state.mode==='endless'?'晚风 · 无限营业':'晴天 · 创意厨房';$('day-name').textContent=state.mode==='story'?day.name:state.mode==='endless'?'不打烊的小岛':'今天我来做主';$('mode-label').textContent=state.mode==='story'?'今日营业':state.mode==='endless'?`口碑 ${'♥'.repeat(state.rep)}`:'自由创作';$('shift-progress').textContent=state.mode==='story'?`第 ${Math.min(day.guests,state.guest+1)} / ${day.guests} 位客人`:state.mode==='endless'?`已服务 ${state.guest} 位客人`:'不计时，不消耗食材';$('hint-button').hidden=state.mode==='free';$('serve-button').firstElementChild.textContent=state.mode==='free'?'收藏我的汉堡':'开饭啦，出餐！';renderGoal();updateWallet();}
   function newOrder(){
-    state.stack=[];state.capped=false;state.ended=false;
+    state.stack=[];state.grill=null;renderGrill();state.capped=false;state.ended=false;
     if(state.mode==='free'){state.order={required:[],banned:[],direct:false};$('customer-avatar').innerHTML=avatar(people[6]);$('customer-name').textContent='创意厨房';$('customer-subtitle').textContent='随心所欲，给美味起个名字';$('order-type').textContent='自由叠料';$('customer-quote').textContent='现在你就是自己的客人！所有配料都可以慢慢解锁。试试咸甜混搭，收藏你的招牌汉堡吧。';$('patience-label').textContent='没有时间限制，享受创作';$('timer-text').textContent='∞';$('patience-fill').style.width='100%';renderStatus();renderStack();return;}
     const available=flavorOrders.filter(o=>o.minDay<= (state.mode==='endless'?7:state.day) && o.required.every(id=>save.unlocked.includes(id)) && o!==state.lastOrder);
     let order;
@@ -164,7 +197,7 @@
     $('customer-avatar').innerHTML=avatar(person);$('customer-name').textContent=person[0];$('customer-subtitle').textContent=person[1];$('order-type').textContent=order.direct?'配方订单':'口味谜语';$('customer-quote').textContent='“'+order.quote+'”';renderStatus();renderStack();renderTimer();
   }
   function renderTimer(){if(state.mode==='free')return;const t=Math.ceil(state.remaining),ratio=state.remaining/state.total;$('timer-text').textContent=`${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`;$('patience-fill').style.width=`${ratio*100}%`;$('patience-fill').style.background=ratio<.25?'#db6944':'#8ba978';$('patience-label').textContent=ratio>.55?'慢慢来，我不赶时间':ratio>.25?'好香呀，我开始期待了':'肚子咕咕叫，要抓紧啦！';}
-  function addIngredient(id){if(state.modal||state.ended)return;if(!save.unlocked.includes(id)){showShop();return;}if(state.capped){toast('先掀开面包，就能继续加料');return;}if(state.stack.length>=maxLayers()){toast('汉堡太高啦！可以升级汉堡架');return;}if(state.mode!=='free'&&stackCost()+byId[id].cost+2>save.money){toast('金币不足，试试更经济的组合');return;}state.stack.push(id);playSound();renderStack();}
+  function addIngredient(id){if(state.modal||state.ended)return false;if(!save.unlocked.includes(id)){showShop();return false;}if(state.capped){toast('先掀开面包，就能继续加料');return false;}if(state.stack.length>=maxLayers()){toast('汉堡太高啦！可以升级汉堡架');return false;}if(state.mode!=='free'&&stackCost()+byId[id].cost+2>save.money){toast('金币不足，试试更经济的组合');return false;}if(needsCooking(id)){if(!state.grill?.ready||state.grill.id!==id){toast('生肉不能直接夹！先拖到煎台，煎好再叠');return false;}state.grill=null;renderGrill();}state.stack.push(id);playSound();renderStack();return true;}
   function evaluate(order,stack,capped){
     const required=order.required||[],banned=order.banned||[],unique=new Set(stack),missing=required.filter(id=>!unique.has(id));
     const forbidden=stack.filter(id=>byId[id].tags.some(t=>banned.includes(t)));
@@ -201,7 +234,7 @@
     $('modal-content').querySelectorAll('[data-upgrade]').forEach(b=>b.onclick=()=>{const u=upgrades.find(x=>x.id===b.dataset.upgrade),price=u.base*(save.upgrades[u.id]+1);if(save.money<price||save.upgrades[u.id]>=u.max)return;save.money-=price;save.upgrades[u.id]++;if(u.id==='patience'){state.total+=15;state.remaining+=15;}persist();playSound('coin');renderStack();showShop(afterShift);});
     if(afterShift){$('modal-close').hidden=true;$('shop-next').onclick=()=>startShift(state.mode,state.mode==='story'?save.day:state.day);}
   }
-  function showHelp(welcome=false){openModal(welcome?'welcome':'help',`<div class="modal-eyebrow">WELCOME TO BURGER ISLAND</div><div class="modal-illustration">${fullBurger()}</div><h2 id="modal-title">欢迎来到小岛汉堡社</h2><p class="modal-intro">海风刚好，面包刚出炉。今天起，你就是这间小店的店长！</p><div class="help-step"><span>01</span><div><strong>听懂客人的小小期待</strong><p>配方订单照着标签做；口味谜语藏着配料线索。拿不准可以点「听听提示」，每单第一次提示免费。</p></div></div><div class="help-step"><span>02</span><div><strong>一点一点，叠出好心情</strong><p>点击配料添加。点汉堡上的一层可以移除，也能撤回或重做。记得盖上面包再出餐！重复太多或违背忌口会扣分。</p></div></div><div class="help-step"><span>03</span><div><strong>卖汉堡，养大你的小店</strong><p>满意度达到 70 获得好评，赚钱解锁奇妙配料和升级。关卡共 8 天；无尽模式失去 3 点口碑即结束；创意厨房不限时、不扣金币。</p></div></div><button class="modal-primary" id="help-start">${welcome?'系上围裙，开始营业 →':'知道啦，继续制作'}</button><p class="tiny-footer">打开菜单、切到其他页面会自动暂停。${storageOK?'进度保存在当前浏览器中。':'当前浏览器无法保存进度，可继续游玩。'}</p>`);$('help-start').onclick=()=>{save.seen=true;persist();forceClose();};}
+  function showHelp(welcome=false){openModal(welcome?'welcome':'help',`<div class="modal-eyebrow">WELCOME TO BURGER ISLAND</div><div class="modal-illustration">${fullBurger()}</div><h2 id="modal-title">欢迎来到小岛汉堡社</h2><p class="modal-intro">横屏打开小店，把食材亲手叠成客人想吃的样子！</p><div class="help-step"><span>01</span><div><strong>听懂客人的小小期待</strong><p>配方订单照着标签做；口味谜语藏着配料线索，点「听听提示」查看答案。</p></div></div><div class="help-step"><span>02</span><div><strong>拖拽、煎制、叠出好心情</strong><p>按住食材拖到盘子上。牛肉、鸡排、培根和奇妙肉饼要先拖上煎台，等煎熟后再拖到汉堡。点食材可辅助操作；点汉堡上的层可移除。</p></div></div><div class="help-step"><span>03</span><div><strong>盖上面包，卖汉堡养大小店</strong><p>盖上面包再出餐，70 分以上获得好评。关卡共 8 天；无尽模式用完 3 点口碑结算；创意厨房不限时、不扣金币。</p></div></div><button class="modal-primary" id="help-start">${welcome?'系上围裙，开始营业 →':'知道啦，继续制作'}</button><p class="tiny-footer">打开菜单、切到其他页面会自动暂停。${storageOK?'进度保存在当前浏览器中。':'当前浏览器无法保存进度，可继续游玩。'}</p>`);$('help-start').onclick=()=>{save.seen=true;persist();forceClose();};}
   function showModes(afterShift=false){
     openModal('modes',`<div class="modal-eyebrow">A NEW DAY, A NEW WAY</div><h2 id="modal-title">今天，怎么营业？</h2><p class="modal-intro">切换模式或重选关卡会重新开始本次营业。金币、解锁和最高纪录会保留。</p><button class="mode-card ${state.mode==='story'?'selected':''}" data-mode="story"><span>☀</span><div><strong>小岛故事 <small>8 天关卡</small></strong><p>每天一个小目标，把小店经营成小岛名片。</p></div></button><div class="day-select">${days.map((d,i)=>`<button data-day="${i}" ${i>save.day?'disabled':''} class="${state.day===i?'current':''}" title="${d.desc}">${i>save.day?'♙':'DAY '+(i+1)}<small>${save.stars[i]?'★'.repeat(save.stars[i]):i<=save.day?'可营业':'未解锁'}</small></button>`).join('')}</div><button class="mode-card ${state.mode==='endless'?'selected':''}" data-mode="endless"><span>☾</span><div><strong>不打烊的小店 <small>最高 ${save.best} 单</small></strong><p>越来越忙的夜市。满意度低于 70 或超时损失 1 点口碑，3 点用完结算。</p></div></button><button class="mode-card ${state.mode==='free'?'selected':''}" data-mode="free"><span>✿</span><div><strong>创意厨房 <small>自由制作</small></strong><p>不限时、不扣金币。自由叠料，为作品命名并收藏。</p></div></button>${afterShift?'<button class="modal-secondary" id="mode-back">返回今日结算</button>':''}`);
     $('modal-content').querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>startShift(b.dataset.mode,save.day));$('modal-content').querySelectorAll('[data-day]').forEach(b=>b.onclick=()=>startShift('story',Number(b.dataset.day)));if(afterShift){$('modal-close').hidden=true;$('mode-back').onclick=()=>showShop(true);}
@@ -216,18 +249,31 @@
   function collect(){if(!state.capped){toast('先给你的作品盖上面包吧');return;}openModal('collect',`<div class="modal-eyebrow">YOUR OWN LITTLE MASTERPIECE</div><h2 id="modal-title">给这份美味起个名字</h2><div class="modal-illustration">${fullBurger(state.stack.slice(0,5))}</div><div class="recipe-detail">${state.stack.map(id=>byId[id].name).join(' + ')}</div><input class="free-name" id="burger-name" maxlength="20" placeholder="例如：草莓云朵的午后" aria-label="汉堡名称"><button class="modal-primary" id="save-burger">收藏到美味手账 ♡</button><p class="tiny-footer">最多收藏 30 份作品，超出后替换最早的收藏。</p>`);$('save-burger').onclick=()=>{const name=$('burger-name').value.trim()||'我的第 '+(save.collection.length+1)+' 份美味';save.collection.push({name,ids:[...state.stack],date:new Date().toLocaleDateString('zh-CN')});if(save.collection.length>30)save.collection.shift();persist();forceClose();playSound('success');toast('已收藏！去美味手账看看吧');};}
   function hint(){if(!state.order)return;const order=state.order;openModal('hint',`<div class="modal-eyebrow">LISTEN A LITTLE CLOSER</div><h2 id="modal-title">海风偷偷告诉你</h2><p class="modal-intro">${order.hint}</p><div class="recipe-detail">${order.required.map(id=>byId[id].name).join(' + ')}<br>${order.banned?.length?'留意忌口，不要添加不喜欢的味道。':'口味谜语允许少量合理发挥，但别堆太多重复配料。'}</div><button class="modal-primary" id="hint-close">好，我知道怎么做啦</button>`);$('hint-close').onclick=closeModal;}
   function renderSound(){ $('sound-button').querySelector('.sound-off').hidden=save.sound;$('sound-button').setAttribute('aria-label',save.sound?'关闭音效':'开启音效');$('sound-button').title=save.sound?'关闭音效':'开启音效'; }
-  $('ingredient-grid').onclick=e=>{const b=e.target.closest('[data-ingredient]');if(b)addIngredient(b.dataset.ingredient);};
+  $('ingredient-grid').onclick=e=>{const b=e.target.closest('[data-ingredient]');if(!b||state.dragging)return;const id=b.dataset.ingredient;if(!save.unlocked.includes(id)){showShop();return;}if(needsCooking(id)){if(state.grill?.ready&&state.grill.id===id)addIngredient(id);else beginCooking(id);}else addIngredient(id);};
+  $('grill-food').onclick=()=>{if(!state.dragging&&state.grill?.ready)addIngredient(state.grill.id);};
+  // Pointer events cover mouse and touch; release only commits when the ghost overlaps the target.
+  let drag=null;
+  const hit=(x,y,id)=>{const r=$(id).getBoundingClientRect();return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom;};
+  function dragEnd(e){if(!drag||e.pointerId!==drag.pointerId)return;const {id,origin,ghost,started}=drag;ghost?.remove();document.body.classList.remove('is-dragging');$('burger-stage').classList.remove('drop-ready');$('grill-station').classList.remove('drop-ready');drag=null;if(!started)return;state.dragging=true;setTimeout(()=>state.dragging=false,0);if(state.modal||state.ended)return;
+    if(origin==='grill'){if(hit(e.clientX,e.clientY,'burger-stage'))addIngredient(id);else toast('把煎熟的肉饼放到汉堡上');}
+    else if(needsCooking(id)){if(hit(e.clientX,e.clientY,'grill-station'))beginCooking(id);else toast('生肉先放到煎台上哦');}
+    else if(hit(e.clientX,e.clientY,'burger-stage'))addIngredient(id);
+    else toast('把配料放到汉堡盘子上');
+  }
+  document.addEventListener('pointerdown',e=>{const source=e.target.closest?.('[data-ingredient],#grill-food');if(!source||state.modal||state.ended)return;const origin=source.id==='grill-food'?'grill':'pantry',id=origin==='grill'?state.grill?.id:source.dataset.ingredient;if(!id||origin==='grill'&&!state.grill?.ready||origin==='pantry'&&!save.unlocked.includes(id))return;drag={id,origin,pointerId:e.pointerId,x:e.clientX,y:e.clientY,started:false,ghost:null};});
+  document.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.pointerId)return;if(!drag.started&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<8)return;if(!drag.started){drag.started=true;drag.ghost=document.createElement('div');drag.ghost.className='drag-ghost';drag.ghost.innerHTML=food(drag.id,drag.origin==='pantry'&&needsCooking(drag.id)?'raw':'cooked');document.body.appendChild(drag.ghost);document.body.classList.add('is-dragging');}e.preventDefault();drag.ghost.style.left=`${e.clientX}px`;drag.ghost.style.top=`${e.clientY}px`;$('burger-stage').classList.toggle('drop-ready',hit(e.clientX,e.clientY,'burger-stage')&&(drag.origin==='grill'||!needsCooking(drag.id)));$('grill-station').classList.toggle('drop-ready',hit(e.clientX,e.clientY,'grill-station')&&drag.origin==='pantry'&&needsCooking(drag.id));});
+  document.addEventListener('pointerup',dragEnd);document.addEventListener('pointercancel',e=>{if(!drag||e.pointerId!==drag.pointerId)return;drag.ghost?.remove();drag=null;document.body.classList.remove('is-dragging');$('burger-stage').classList.remove('drop-ready');$('grill-station').classList.remove('drop-ready');});
   document.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>{state.category=b.dataset.category;document.querySelectorAll('[data-category]').forEach(t=>{t.classList.toggle('active',t===b);t.setAttribute('aria-selected',String(t===b));});renderPantry();});
   $('burger-stack').onclick=e=>{const layer=e.target.closest('[data-index]');if(layer&&!state.modal){if(state.capped){toast('掀开面包后才能调整配料');return;}state.stack.splice(Number(layer.dataset.index),1);renderStack();}};
-  $('undo-button').onclick=()=>{if(state.capped)state.capped=false;else state.stack.pop();renderStack();};$('clear-button').onclick=()=>{state.stack=[];state.capped=false;renderStack();};$('bun-button').onclick=()=>{state.capped=!state.capped;playSound();renderStack();};$('serve-button').onclick=()=>serve();
+  $('undo-button').onclick=()=>{if(state.capped)state.capped=false;else state.stack.pop();renderStack();};$('clear-button').onclick=()=>{state.stack=[];state.grill=null;renderGrill();state.capped=false;renderStack();};$('bun-button').onclick=()=>{state.capped=!state.capped;playSound();renderStack();};$('serve-button').onclick=()=>serve();
   $('sound-button').onclick=()=>{save.sound=!save.sound;persist();renderSound();playSound('coin');};$('help-button').onclick=()=>showHelp();$('hint-button').onclick=hint;$('shop-button').onclick=()=>showShop();$('aside-shop').onclick=()=>showShop();$('book-button').onclick=()=>showBook();$('mode-button').onclick=()=>showModes();$('play-button').onclick=()=>{if(state.mode!=='story')toast('你正在'+(state.mode==='free'?'创意厨房':'无尽模式')+'，点击营业模式可以切换');};
   $('pause-button').onclick=()=>{openModal('pause',`<div class="modal-eyebrow">TAKE A LITTLE BREATH</div><h2 id="modal-title">小岛时间，暂停一下</h2><p class="modal-intro">汉堡和客人都在等你。喝口水，再继续吧。</p><button class="modal-primary" id="resume">继续营业 →</button><button class="modal-secondary" id="pause-mode">选择营业模式</button>`);$('resume').onclick=closeModal;$('pause-mode').onclick=()=>showModes();};
   $('modal-close').onclick=closeModal;$('modal-backdrop').onclick=e=>{if(e.target===$('modal-backdrop'))closeModal();};document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();if(e.key==='Tab'&&state.modal){const focusable=[...$('modal').querySelectorAll('button:not([disabled]):not([hidden]),input')];const first=focusable[0],last=focusable[focusable.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}});
   document.addEventListener('visibilitychange',()=>{state.last=performance.now();});
-  function tick(now){const elapsed=Math.min((now-state.last)/1000,.4);state.last=now;if(!state.modal&&!document.hidden&&!state.ended&&state.mode!=='free'&&state.order){state.remaining=Math.max(0,state.remaining-elapsed);renderTimer();if(state.remaining<=0)serve(true);}requestAnimationFrame(tick);}
+  function tick(now){const elapsed=Math.min((now-state.last)/1000,.4);state.last=now;if(!state.modal&&!document.hidden&&!state.ended){advanceCooking(elapsed);if(state.mode!=='free'&&state.order){state.remaining=Math.max(0,state.remaining-elapsed);renderTimer();if(state.remaining<=0)serve(true);}}requestAnimationFrame(tick);}
   $('mini-logo').innerHTML=fullBurger();$('bun-icon').innerHTML=food('top');
   $('island-art').innerHTML=svg(`<ellipse cx="180" cy="291" rx="135" ry="22" fill="#dddbc5"/><path d="M46 283q64-18 100-4t145 1" stroke="#b6c9bc" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="265" cy="64" r="28" fill="#eccb77"/><path d="m264 21 1-8m34 25 7-4m-76-2-7-6m42 82v8m39-25 6 5" stroke="#ddba6c" stroke-width="3" stroke-linecap="round"/><path d="M65 248 76 136 276 136 289 248" fill="#efe3c6" stroke="#94785b" stroke-width="3"/><path d="M60 140 81 99h188l22 41Z" fill="#dc8765" stroke="#94785b" stroke-width="3"/><path d="M75 105h195m-211 38h236" stroke="#f9cc98" stroke-width="5"/><rect x="80" y="148" width="191" height="79" rx="6" fill="#8caa97" stroke="#94785b" stroke-width="3"/><rect x="94" y="155" width="68" height="54" rx="3" fill="#e9dab4"/><rect x="177" y="155" width="78" height="54" rx="3" fill="#e9dab4"/><path d="M59 140h234v16q-14 15-28 0q-14 15-28 0q-14 15-28 0q-14 15-28 0q-14 15-28 0q-14 15-28 0q-14 15-28 0q-14 15-32 0Z" fill="#f8edce" stroke="#94785b" stroke-width="2"/><path d="M64 140h28v16q-14 15-28 0m56-16h28v16q-14 15-28 0m56-16h28v16q-14 15-28 0m56-16h28v16q-14 15-28 0" fill="#dc8765"/><rect x="66" y="219" width="221" height="15" rx="4" fill="#b18058" stroke="#94785b" stroke-width="2"/><rect x="102" y="246" width="41" height="42" rx="4" fill="#dc8765" stroke="#94785b" stroke-width="2"/><rect x="212" y="246" width="41" height="42" rx="4" fill="#dc8765" stroke="#94785b" stroke-width="2"/><rect x="117" y="78" width="123" height="27" rx="8" fill="#fbefd6" stroke="#94785b" stroke-width="2"/><text x="179" y="96" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="bold" fill="#987650" letter-spacing="2">BURGER CLUB</text><path d="M308 255v-78m-1 35q-35-16-28-36q33 4 29 36m1-15q-4-31 19-39q12 28-19 39" fill="#8caa77" stroke="#6e8b5d" stroke-width="3"/><path d="M292 245h34l-5 35h-23Z" fill="#c98e6b" stroke="#94785b" stroke-width="2"/><path d="M44 241q-17-37 4-51q21 19-4 51" fill="#9caf7a"/><path d="M44 213v62" stroke="#7c9365" stroke-width="3"/><path d="M32 264h25l-4 17H36Z" fill="#d8b88a"/><path d="m18 70 13-4 13 4m76-30 9-4 9 4" fill="none" stroke="#b6bba0" stroke-width="2" stroke-linecap="round"/><path d="M49 294q12 7 24 0m209 8q12 7 24 0" fill="none" stroke="#b4c7b9" stroke-width="3"/>`,'0 0 360 330');
   renderSound();startShift();if(!save.seen)showHelp(true);requestAnimationFrame(tick);
   // 调试入口仅在显式开启测试标志时公开。
-  if(window.__BURGER_TEST__)window.BurgerTest={evaluate,ingredients,days,state,getSave:()=>save,startShift,addIngredient,serve,food};
+  if(window.__BURGER_TEST__)window.BurgerTest={evaluate,ingredients,days,state,getSave:()=>save,startShift,addIngredient,beginCooking,advanceCooking,serve,food};
 })();
