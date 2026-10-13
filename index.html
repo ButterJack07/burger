@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#faf4e8">
+  <meta name="description" content="小岛汉堡社：一款离线游玩的竖屏汉堡经营游戏。读懂客人的口味，自由叠料，经营你的海边小店。">
+  <title>小岛汉堡社 · 一口好心情</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./cartoon.css">
+  <script src="./game.js" defer></script>
+</head>
+<body>
+  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+  <div class="page-shell">
+    <aside class="brand-panel">
+      <a class="wordmark" href="./index.html" aria-label="小岛汉堡社首页"><span class="brand-symbol">b.</span><span>BURGER<br>ISLAND CLUB</span></a>
+      <div class="brand-copy"><span class="eyebrow"><i></i> 一间海边小店，一口好心情</span><h1>生活有点忙，<br>汉堡<span>慢慢叠。</span></h1><p>面包、阳光，还有一点奇思妙想。<br>把客人的小小期待，叠成刚刚好的美味。</p></div>
+      <div class="island-art" id="island-art" aria-hidden="true"></div>
+      <div class="brand-bottom"><span class="tiny-sun">✳</span><div>MADE WITH A LITTLE LOVE<small>无需联网 · 进度自动保存 · 戴耳机更美味</small></div></div>
+    </aside>
+
+    <main class="game" aria-label="小岛汉堡社游戏">
+      <header class="game-header"><div class="shop-name"><span class="mini-burger" id="mini-logo"></span><div><h2>小岛汉堡社</h2><span>BURGER ISLAND</span></div></div><div class="header-actions"><button class="icon-button" id="sound-button" title="开启音效" aria-label="开启音效">♫<span class="sound-off"></span></button><button class="icon-button" id="help-button" title="玩法说明" aria-label="玩法说明">?</button></div></header>
+      <section class="status-bar" aria-label="营业状态"><div><span class="status-label" id="day-label">晴天 · 第 01 天</span><strong id="day-name">初来小岛</strong></div><div class="wallet"><span class="coin-icon">✦</span><strong id="money">80</strong><span class="wallet-label">金币</span></div></section>
+      <div class="shift-row"><div class="shift-tag"><span class="live-dot"></span><span id="mode-label">今日营业</span></div><div id="shift-progress">第 1 / 5 位客人</div><button id="pause-button" class="text-button" aria-label="暂停游戏">Ⅱ 暂停</button></div>
+
+      <section class="customer-card" id="customer-card" aria-label="客人订单"><div class="customer-top"><div class="avatar" id="customer-avatar"></div><div class="customer-identity"><strong id="customer-name"></strong><span id="customer-subtitle"></span></div><span class="order-type" id="order-type">口味订单</span></div><p class="customer-quote" id="customer-quote"></p><div id="recipe-chips" class="recipe-chips"></div><div class="patience-row"><span id="patience-label">慢慢来，我不赶时间</span><span id="timer-text">1:30</span></div><div class="patience-track"><div id="patience-fill"></div></div></section>
+
+      <section class="kitchen" aria-label="汉堡制作台"><div class="kitchen-heading"><span><i class="little-star">✧</i> 你的美味工作台</span><button class="text-button" id="hint-button">☀ 听听提示</button></div><div class="burger-stage" id="burger-stage"><div class="window-sun"></div><div class="window-line line-one"></div><div class="window-line line-two"></div><span class="stage-caption">HAPPINESS, LAYER BY LAYER</span><div class="burger-stack" id="burger-stack" aria-label="汉堡叠层"></div><div class="plate"></div><div class="plate-shadow"></div><span class="stack-note" id="stack-note">从喜欢的配料开始吧 ↓</span><span class="layer-counter" id="layer-counter">0 / 8 层</span></div><div class="prep-toolbar"><button id="undo-button" class="subtle-button">↶ 撤回一层</button><span id="cost-label">食材成本 <b>0</b></span><button id="clear-button" class="subtle-button">重新制作</button></div></section>
+
+      <section class="pantry" aria-label="配料柜"><div class="pantry-heading"><h3>今天，夹点什么？</h3><span id="pantry-count">6 种配料</span></div><div class="ingredient-tabs" role="tablist" aria-label="配料分类"><button class="active" data-category="all" role="tab" aria-selected="true">全部</button><button data-category="savory" role="tab" aria-selected="false">经典咸香</button><button data-category="fresh" role="tab" aria-selected="false">清新蔬菜</button><button data-category="secret" role="tab" aria-selected="false">奇妙滋味 <span>✦</span></button></div><div class="ingredient-grid" id="ingredient-grid"></div></section>
+
+      <div class="serve-row"><button class="bun-button" id="bun-button"><span id="bun-icon"></span><span>盖上面包</span></button><button class="serve-button" id="serve-button"><span>开饭啦，出餐！</span><span>↗</span></button></div>
+      <nav class="bottom-nav" aria-label="游戏导航"><button class="active" id="play-button"><span>♧</span>制作台</button><button id="shop-button"><span>▤</span>小岛商店<i id="shop-dot"></i></button><button id="book-button"><span>▧</span>美味手账</button><button id="mode-button"><span>☷</span>营业模式</button></nav>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </main>
+
+    <aside class="journal-panel"><div class="journal-top"><span>THE LITTLE THINGS</span><span>VOL. 01 ↗</span></div><div class="journal-note"><span class="tape"></span><div class="note-top">店长的小纸条 <span>✳</span></div><h2>好吃的秘密，<br>是听懂<span>「想吃什么」</span>。</h2><p>有的客人会直说配方，<br>有的却把答案藏在心情里。</p><div class="note-rule"></div><div class="taste-example"><span>“像夏天的草地一样清爽。”</span><small>也许，生菜和番茄就是答案。</small></div><div class="note-doodle">a little fresh, a little magic ♡</div></div><div class="daily-goal"><div class="goal-heading"><span>✷ 今日小目标</span><span id="goal-percent">0%</span></div><h3 id="goal-title">让 4 位客人带着笑容离开</h3><div class="goal-track"><div id="goal-fill"></div></div><p id="goal-detail">好评 0 / 4 · 完成后解锁下一天</p></div><button class="journal-shop-link" id="aside-shop"><span>配料研究所<small>总有新鲜事，值得期待。</small></span><span>↗</span></button><div class="offline-note"><span>◌</span> 小岛时间，随时为你停留。<br><small>切换页面或打开菜单会自动暂停</small></div></aside>
+  </div>
+  <div class="modal-backdrop" id="modal-backdrop" hidden><section class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button class="modal-close icon-button" id="modal-close" aria-label="关闭弹窗">×</button><div id="modal-content"></div></section></div>
+  <div class="confetti-container" id="confetti" aria-hidden="true"></div>
+</body>
+</html>

@@ -1,0 +1,29 @@
+/* 圆润、轻描边的卡通游戏皮肤 */
+:root{--paper:#fff9ef;--ink:#584532;--orange:#ed8156;--orange-dark:#d9653c;--green:#75a278;--line:#ecdfc8;background:#f6eddc}
+.game{border:2px solid #e7d6b8;box-shadow:0 9px 0 #e3d4ba,0 25px 65px #76593612;border-radius:31px}
+.shop-name h2,.pantry-heading h3,.modal h2{font-weight:850}
+.customer-card{border:2px solid #e8d9ba;border-radius:19px;box-shadow:0 4px 0 #efe3cc;background:#fffdf5}
+.avatar{border:2px solid #f6edda;width:47px;height:47px}
+.order-type{background:#f8e7c7;border-radius:9px;color:#ab8345}
+.burger-stage{border:2px solid #e8d5b5;border-radius:18px;background:linear-gradient(180deg,#e9efdd 0%,#f3eedb 70%,#e3cba4 70%,#f0ddbc 73%,#f4e6cc 100%)}
+.window-sun{background:#f4ce76;opacity:.8;width:78px;height:78px;left:18px;top:16px;box-shadow:0 0 0 9px #f7d88a33}
+.stage-caption{color:#9eaa81;letter-spacing:1px}
+.burger-stack{filter:drop-shadow(0 2px 1px #61371840) drop-shadow(0 9px 5px #72502c30)}
+.burger-layer{filter:drop-shadow(0 2px 1px #542d2238)}
+.burger-layer[data-kind="top"]{filter:drop-shadow(0 3px 2px #77432640)}
+.plate:after{box-shadow:inset 0 2px 5px #a5885a26}
+.window-line{height:140px;background:#fffff980;width:3px}
+.ingredient{border:2px solid #e9dabf;background:#fff2db;border-radius:14px;box-shadow:0 3px 0 #e9dcc3;height:70px}
+.ingredient:hover{background:#ffe9c1;border-color:#d8b785}
+.ingredient-picture{width:59px;height:33px}.ingredient-name{font-weight:650;color:#8a6945;font-size:9px}
+.ingredient.locked{background:#f0ecdf;box-shadow:0 3px 0 #e7dfcd}
+.bun-button{border:2px solid #dfc592;background:#f8e6bd;border-radius:14px;box-shadow:0 4px 0 #e0ca9f}
+.serve-button{border:2px solid #d97045;border-radius:14px;box-shadow:0 4px 0 #bf5a37;letter-spacing:1px}
+.serve-row{margin-bottom:20px}.wallet{border:2px solid #ecd39f;background:#fff0cd;padding:6px 10px}
+.patience-track{height:5px;background:#eee4d1}.live-dot{box-shadow:0 0 0 3px #dce9d5}
+.modal{border:2px solid #e6d1ad;box-shadow:0 8px 0 #b9a181,0 25px 100px #302a3033}
+.modal-primary{border:2px solid #d77044;box-shadow:0 4px 0 #c16a42;border-radius:13px}
+.shop-art{border:1px solid #e3d0ad;background:#f9eacb;border-radius:12px}
+.buy-button{box-shadow:0 3px 0 #c3684333;border-radius:9px}.bottom-nav{background:#f8eedb}
+.bottom-nav button>span{font-weight:700}.journal-note{border-radius:3px 3px 17px 3px}
+@media(max-width:700px){.game{border:0;box-shadow:none;border-radius:0}.ingredient-grid{min-height:147px}.serve-row{margin-bottom:19px}}
