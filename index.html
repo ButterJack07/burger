@@ -4,12 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#faf4e8">
-  <meta name="description" content="小岛汉堡社：离线横屏汉堡经营游戏。拖拽配料、煎好肉饼，读懂客人的口味。">
+  <meta name="description" content="小岛汉堡社：离线竖屏小摊经营游戏。读小票订单、拖拽叠汉堡、煎肉饼和炸薯条。">
   <title>小岛汉堡社 · 一口好心情</title>
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./cartoon.css">
   <link rel="stylesheet" href="./landscape.css">
+  <link rel="stylesheet" href="./stall.css">
   <script src="./game.js" defer></script>
 </head>
 <body>
@@ -26,6 +27,7 @@
       <header class="game-header"><div class="shop-name"><span class="mini-burger" id="mini-logo"></span><div><h2>小岛汉堡社</h2><span>BURGER ISLAND</span></div></div><div class="header-actions"><button class="icon-button" id="sound-button" title="开启音效" aria-label="开启音效">♫<span class="sound-off"></span></button><button class="icon-button" id="help-button" title="玩法说明" aria-label="玩法说明">?</button></div></header>
       <section class="status-bar" aria-label="营业状态"><div><span class="status-label" id="day-label">晴天 · 第 01 天</span><strong id="day-name">初来小岛</strong></div><div class="wallet"><span class="coin-icon">✦</span><strong id="money">80</strong><span class="wallet-label">金币</span></div></section>
       <div class="shift-row"><div class="shift-tag"><span class="live-dot"></span><span id="mode-label">今日营业</span></div><div id="shift-progress">第 1 / 5 位客人</div><button id="pause-button" class="text-button" aria-label="暂停游戏">Ⅱ 暂停</button></div>
+      <section class="ticket-rack" aria-label="营业订单架"><div class="rack-title">✦ 小岛取餐口 <span>ORDER HERE</span></div><div id="order-tickets" class="order-tickets"></div></section>
 
       <section class="customer-card" id="customer-card" aria-label="客人订单"><div class="customer-top"><div class="avatar" id="customer-avatar"></div><div class="customer-identity"><strong id="customer-name"></strong><span id="customer-subtitle"></span></div><span class="order-type" id="order-type">口味订单</span></div><p class="customer-quote" id="customer-quote"></p><div id="recipe-chips" class="recipe-chips"></div><div class="patience-row"><span id="patience-label">慢慢来，我不赶时间</span><span id="timer-text">1:30</span></div><div class="patience-track"><div id="patience-fill"></div></div></section>
 
@@ -33,6 +35,7 @@
 
       <section class="pantry" aria-label="配料柜"><div class="pantry-heading"><h3>今天，夹点什么？</h3><span id="pantry-count">6 种配料</span></div><div class="ingredient-tabs" role="tablist" aria-label="配料分类"><button class="active" data-category="all" role="tab" aria-selected="true">全部</button><button data-category="savory" role="tab" aria-selected="false">经典咸香</button><button data-category="fresh" role="tab" aria-selected="false">清新蔬菜</button><button data-category="secret" role="tab" aria-selected="false">奇妙滋味 <span>✦</span></button></div><div class="ingredient-grid" id="ingredient-grid"></div><p class="pantry-tip">按住配料拖向盘子 · 生肉要先拖到煎台</p></section>
 
+      <section class="fryer" aria-label="薯条炸锅"><button id="fry-button" class="fry-button"><span>🍟</span><strong id="fry-label">下锅炸薯条</strong><small id="fry-time">套餐配餐 · 6 秒</small></button><div class="fry-meter"><div id="fry-fill"></div></div><div id="fries-tray" class="fries-tray">配餐托盘 · 空</div></section>
       <div class="serve-row"><button class="bun-button" id="bun-button"><span id="bun-icon"></span><span>盖上面包</span></button><button class="serve-button" id="serve-button"><span>开饭啦，出餐！</span><span>↗</span></button></div>
       <nav class="bottom-nav" aria-label="游戏导航"><button class="active" id="play-button"><span>♧</span>制作台</button><button id="shop-button"><span>▤</span>小岛商店<i id="shop-dot"></i></button><button id="book-button"><span>▧</span>美味手账</button><button id="mode-button"><span>☷</span>营业模式</button></nav>
       <div class="toast" id="toast" role="status" aria-live="polite"></div>

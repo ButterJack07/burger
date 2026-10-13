@@ -116,3 +116,16 @@ test('pointer drag routes raw meat to grill, then cooked patty to burger',()=>{
   move('pointerdown',300,grill);move('pointermove',180,grill);move('pointerup',180,grill);
   assert.equal(api.state.stack[0],'beef');assert.equal(api.state.grill,null);
 });
+
+test('fries require six seconds and plating; complete combo avoids missing-side penalty',()=>{
+  const {api,document}=boot();api.startShift('story',1);api.state.order={required:['lettuce'],direct:true,banned:[],fries:true,hint:'薯条套餐'};
+  api.fry();api.advanceFryer(5);api.fry();assert.equal(api.state.fries,false);
+  api.advanceFryer(1);api.fry();assert.equal(api.state.fries,true);assert.equal(api.state.fryer,null);
+  api.addIngredient('lettuce');document.getElementById('bun-button').onclick();api.serve();assert.equal(api.state.scores[0],100);
+});
+
+test('missing fries costs 35 points and cooking pauses in menus',()=>{
+  const {api,document}=boot();api.startShift('story',1);api.state.order={required:['lettuce'],direct:true,banned:[],fries:true,hint:'薯条套餐'};
+  api.fry();api.state.modal='pause';api.advanceFryer(6);assert.equal(api.state.fryer.progress,0);api.state.modal=null;
+  api.addIngredient('lettuce');document.getElementById('bun-button').onclick();api.serve();assert.equal(api.state.scores[0],65);
+});
